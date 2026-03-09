@@ -1,6 +1,6 @@
 # Pairwise
 
-A real-time collaborative code review and pair programming platform built with [Replit Core](https://replit.com). Pairwise provides a VS Code-like editing experience with session snapshots, inline comments, diff viewing, and session replay — all synchronized in real time via WebSockets.
+A real-time collaborative code review and pair programming platform. Pairwise delivers a VS Code-like editing experience with session snapshots, inline comments, diff viewing, and session replay — all synchronized in real time via WebSockets.
 
 ## Features
 
@@ -28,7 +28,6 @@ A real-time collaborative code review and pair programming platform built with [
 | **Database** | PostgreSQL (Neon serverless) |
 | **ORM** | Drizzle ORM |
 | **Validation** | Zod (via `drizzle-zod`) |
-| **Platform** | Built and deployed with Replit Core |
 
 ## Prerequisites
 
@@ -52,7 +51,7 @@ npm install
 
 ### 3. Configure environment variables
 
-Create a `.env` file in the project root (or set the variables in your environment):
+Create a `.env` file in the project root:
 
 ```env
 DATABASE_URL=postgresql://<user>:<password>@<host>/<database>?sslmode=require
@@ -156,7 +155,7 @@ All API endpoints are served under the `/api` namespace:
 
 ## Deployment
 
-The project is configured for deployment on **Replit** with autoscaling:
+Pairwise can be self-hosted on any Node.js-compatible platform. The production build outputs to `dist/` — Vite bundles the frontend into `dist/public/` and esbuild bundles the server into `dist/index.js`. The server serves both the API and the static frontend assets.
 
 ```bash
 # Build for production
@@ -166,7 +165,7 @@ npm run build
 npm run start
 ```
 
-The production build outputs to `dist/` — Vite bundles the frontend into `dist/public/` and esbuild bundles the server into `dist/index.js`. The server serves both the API and the static frontend assets.
+Make sure `DATABASE_URL` is set in your environment before starting the server in production.
 
 ## Contributing
 
