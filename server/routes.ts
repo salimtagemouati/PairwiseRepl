@@ -201,6 +201,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract files from request body
       const filesData = req.body.diff?.files || {};
       
+      if (Array.isArray(filesData) || typeof filesData !== "object" ||
+          Object.keys(filesData).length === 0 ||
+          Object.entries(filesData).some(([path, value]) => !path || typeof value !== "string")) {
+        return res.status(400).json({ error: "A snapshot requires at least one named file with text content" });
+      }
+
       // Get most recent snapshot for diff calculation
       const previousSnapshots = await db
         .select()

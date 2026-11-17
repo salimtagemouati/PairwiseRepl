@@ -99,11 +99,10 @@ export default function SessionPage() {
 
   const createSnapshotMutation = useMutation({
     mutationFn: async (description: string) => {
-      const filesObject: Record<string, string> = {};
-      Object.entries(currentFileContent).forEach(([path, content]) => {
-        filesObject[path] = content;
-      });
-      
+      if (session?.projectId && !files) throw new Error("Project files are still loading");
+      const filesObject = Object.fromEntries((files ?? []).map(file => [file.path, file.content]));
+      Object.assign(filesObject, currentFileContent);
+
       return apiRequest("POST", `/api/sessions/${sessionId}/snapshots`, {
         description,
         authorId: currentUserId,
