@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import Editor from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ type FileNode = {
 interface SessionEditorProps {
   sessionId: string;
   initialFiles?: FileNode[];
+  liveContent?: Record<string, string>;
   onCodeChange?: (code: string, filePath: string) => void;
   onTakeSnapshot?: (description: string) => void;
   onEndSession?: () => void;
@@ -29,6 +30,7 @@ interface SessionEditorProps {
 export function SessionEditor({
   sessionId,
   initialFiles = [],
+  liveContent = {},
   onCodeChange,
   onTakeSnapshot,
   onEndSession,
@@ -44,9 +46,10 @@ export function SessionEditor({
     },
   ];
   
-  const [files, setFiles] = useState<FileNode[]>(initialFiles.length > 0 ? initialFiles : defaultFiles);
-  const [currentFile, setCurrentFile] = useState<FileNode | null>(files[0] || null);
-  const [editorContent, setEditorContent] = useState<string>(files[0]?.content || "");
+  const files = initialFiles.length ? initialFiles : defaultFiles;
+  const [selectedPath, setSelectedPath] = useState<string>();
+  const currentFile = files.find(file => file.path === selectedPath) ?? files[0];
+  const editorContent = liveContent[currentFile.path] ?? currentFile.content ?? "";
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [isSnapshotDialogOpen, setIsSnapshotDialogOpen] = useState(false);
   const [snapshotDescription, setSnapshotDescription] = useState("");
@@ -58,18 +61,8 @@ export function SessionEditor({
   };
 
   const handleEditorChange = (value: string | undefined) => {
-    if (value !== undefined) {
-      setEditorContent(value);
-      
-      if (currentFile) {
-        setFiles(prev => prev.map(f => 
-          f.path === currentFile.path ? { ...f, content: value } : f
-        ));
-        
-        if (onCodeChange) {
-          onCodeChange(value, currentFile.path);
-        }
-      }
+    if (!readOnly && value !== undefined && value !== editorContent) {
+      onCodeChange?.(value, currentFile.path);
     }
   };
 
@@ -128,8 +121,7 @@ export function SessionEditor({
           }`}
           style={{ paddingLeft: `${depth * 12 + 24}px` }}
           onClick={() => {
-            setCurrentFile(node);
-            setEditorContent(node.content || "");
+            setSelectedPath(node.path);
           }}
           data-testid={`file-${node.path}`}
         >
