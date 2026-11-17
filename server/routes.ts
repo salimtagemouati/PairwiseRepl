@@ -1,3 +1,4 @@
+import { diffLines } from "diff";
 import { createAuthenticator, projectAccess, sessionAccess, visibleSessions } from "./access";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
@@ -215,36 +216,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .orderBy(desc(snapshots.timestamp))
         .limit(1);
       
-      const filesModified = Object.keys(filesData);
+      const previous = (previousSnapshots[0]?.diff as { files?: Record<string, string> })?.files ?? {};
+      const paths = new Set([...Object.keys(previous), ...Object.keys(filesData)]);
+      const filesModified = Array.from(paths).filter(path => previous[path] !== filesData[path]);
       let linesChanged = 0;
-      
-      if (previousSnapshots.length > 0) {
-        // Calculate diff against previous snapshot
-        const prevDiff = previousSnapshots[0].diff as any;
-        const prevFiles = prevDiff?.files || {};
-        
-        // Compare current files with previous snapshot
-        for (const [path, content] of Object.entries(filesData)) {
-          const currentLines = (content as string).split('\n').length;
-          const prevContent = prevFiles[path] || '';
-          const prevLines = typeof prevContent === 'string' ? prevContent.split('\n').length : 0;
-          linesChanged += Math.abs(currentLines - prevLines);
+      for (const path of filesModified) {
+        const changes = diffLines(previous[path] ?? "", filesData[path] ?? "", { timeout: 100 });
+        if (!changes) return res.status(422).json({ error: "Snapshot diff is too large" });
+        for (const part of changes) {
+          if (part.added || part.removed) linesChanged += part.count;
         }
-        
-        // Add lines from files that were removed
-        for (const [path, content] of Object.entries(prevFiles)) {
-          if (!filesData[path]) {
-            const prevLines = typeof content === 'string' ? (content as string).split('\n').length : 0;
-            linesChanged += prevLines;
-          }
-        }
-      } else {
-        // First snapshot: all lines are "added"
-        linesChanged = Object.values(filesData).reduce((sum: number, content: any) => {
-          return sum + (typeof content === 'string' ? content.split('\n').length : 0);
-        }, 0);
       }
-      
+
       const metadata = {
         linesChanged, // Diff delta against previous snapshot (or total if first)
         filesModified,
