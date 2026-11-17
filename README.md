@@ -43,6 +43,12 @@ git clone https://github.com/SalimTag/PairwiseRepl.git
 cd PairwiseRepl
 ```
 
+### Workspace access
+
+This version uses browser HTTP Basic authentication with a separate random access token for each existing database user. Use HTTPS for hosted instances. Set `PAIRWISE_ORIGIN` to the exact browser origin, including the port for local development (for example `http://localhost:5000`). Set `PAIRWISE_ACCESS_DIGESTS` in the server environment to a JSON object mapping database user IDs to the lowercase SHA-256 digests of their tokens. An empty map denies access. Generate tokens locally with `openssl rand -hex 32` and hash the exact token bytes without a trailing newline. Deliver each token privately. At the browser prompt, enter the database user ID and its token. Restart the server after changing the map to disconnect existing clients.
+
+Session hosts manage session status. Active participants can read their sessions. The roles `editor`, `driver`, and `navigator` also grant editing rights. A session shares its project's files with those participants. Only the project owner can attach the project to a new session. End a participant's access by setting their membership's `left_at`. Run `npm test` for isolated HTTP and WebSocket access checks.
+
 ### 2. Install dependencies
 
 ```bash

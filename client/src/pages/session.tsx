@@ -19,7 +19,8 @@ export default function SessionPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const sessionId = params.id as string;
-  const currentUserId = "fbc686e3-0305-49d5-a92a-462dca28e4fd";
+  const { data: identity } = useQuery<{ id: string }>({ queryKey: ["/api/me"] });
+  const currentUserId = identity?.id ?? "";
   
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
@@ -30,7 +31,7 @@ export default function SessionPage() {
   const wsRef = useRef<WebSocket | null>(null);
   const saveTimerRef = useRef<Record<string, NodeJS.Timeout>>({});
 
-  const { data: session, isLoading: sessionLoading } = useQuery<Session & { host: { username: string; avatarUrl: string | null } }>({
+  const { data: session, isLoading: sessionLoading } = useQuery<Session & { canEdit: boolean; host: { username: string; avatarUrl: string | null } }>({
     queryKey: ["/api/sessions", sessionId],
   });
 
@@ -52,18 +53,11 @@ export default function SessionPage() {
   });
 
   useEffect(() => {
+    if (!currentUserId) return;
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const host = window.location.host || `${window.location.hostname}:5000`;
-    const wsUrl = `${protocol}//${host}/ws`;
+    const wsUrl = `${protocol}//${host}/ws?session=${encodeURIComponent(sessionId)}`;
     const socket = new WebSocket(wsUrl);
-
-    socket.onopen = () => {
-      socket.send(JSON.stringify({
-        type: 'join-session',
-        sessionId,
-        userId: currentUserId,
-      }));
-    };
 
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data);
@@ -430,16 +424,17 @@ export default function SessionPage() {
           <SessionEditor
             sessionId={sessionId}
             initialFiles={isViewingSnapshot ? snapshotFiles : (files?.map((f: any) => ({
-              name: f.name,
+              name: f.name || f.path,
               path: f.path,
               type: f.type || 'file',
               content: f.content || '',
             })) || [])}
-            onCodeChange={isViewingSnapshot ? undefined : handleCodeChange}
+            liveContent={isViewingSnapshot ? {} : currentFileContent}
+            onCodeChange={isViewingSnapshot || !session.canEdit ? undefined : handleCodeChange}
             onTakeSnapshot={handleTakeSnapshot}
             onEndSession={handleEndSession}
             currentUserId={currentUserId}
-            readOnly={isViewingSnapshot}
+            readOnly={isViewingSnapshot || !session.canEdit}
           />
         </div>
 

@@ -11,7 +11,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/session/:id" component={SessionPage} />
+      <Route path="/session/:id">{params => <SessionPage key={params.id} />}</Route>
       <Route component={NotFound} />
     </Switch>
   );

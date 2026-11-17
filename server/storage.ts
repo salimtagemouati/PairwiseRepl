@@ -22,7 +22,7 @@ import {
   sessionParticipants,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { and, eq, desc } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -160,8 +160,7 @@ export class DatabaseStorage implements IStorage {
   async removeParticipant(sessionId: string, userId: string): Promise<void> {
     await db.update(sessionParticipants)
       .set({ leftAt: new Date() })
-      .where(eq(sessionParticipants.sessionId, sessionId))
-      .where(eq(sessionParticipants.userId, userId));
+      .where(and(eq(sessionParticipants.sessionId, sessionId), eq(sessionParticipants.userId, userId)));
   }
 }
 
